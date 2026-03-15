@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
+    protected $fillable = ['total', 'payment_method'];
+
     public function items() {
         return $this->hasMany(OrderItem::class);
     }
