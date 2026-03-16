@@ -1,31 +1,68 @@
 <x-layout>
-    <div class="grid grid-cols-12 h-screen w-full bg-gray-100">
-        <div class="col-span-1 bg-white border-r flex flex-col items-center py-4">
-        </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-screen w-full bg-gray-100 overflow-hidden">
 
-        <div class="col-span-8 p-6 overflow-y-auto">
+        <div class="col-span-2 p-6 overflow-y-auto">
             <div class="flex justify-between mb-6">
                 <h1 class="text-2xl font-bold">Menu Order</h1>
-                <input type="text" placeholder="Search menu..." class="rounded-lg border-gray-300">
+                {{-- <input type="text" placeholder="Search menu..." class="rounded-lg border-gray-300"> --}}
             </div>
 
             <div class="grid grid-cols-3 gap-4">
-                @foreach ($products as $product)
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-transparent hover:border-blue-500">
-                        <div class="h-32 bg-gray-200 rounded-lg mb-2"></div>
-                        <h3 class="font-semibold">{{ $product->name }}</h3>
-                        <p class="text-blue-600 font-bold">₱{{ number_format($product->price, 2) }}</p>
+                @forelse ($products as $product)
+                    <div
+                        class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 hover:border-blue-500 hover:shadow-md transition-all group">
+                        {{-- Image Container --}}
+                        <div
+                            class="aspect-square w-full mb-4 overflow-hidden rounded-[1.5rem] bg-slate-50 border border-slate-50">
+                            @if ($product->image)
+                                <img src="{{ asset('storage/' . $product->image) }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                            @else
+                                <div class="w-full h-full bg-slate-100 flex items-center justify-center">
+                                    <span class="text-slate-400 font-black text-xl">
+                                        {{ strtoupper(substr($product->name, 0, 1)) }}
+                                    </span>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Product Info --}}
+                        <div class="space-y-1 mb-4 px-1">
+                            <h3 class="font-black text-slate-800 leading-tight truncate">{{ $product->name }}</h3>
+                            <p class="text-blue-600 font-black text-lg">₱{{ number_format($product->price, 2) }}</p>
+                        </div>
+
+                        {{-- Action --}}
                         <form action="{{ route('pos.addToCart', $product->id) }}" method="POST">
                             @csrf
-                            <button class="w-full mt-2 bg-slate-800 text-white py-2 rounded-lg text-sm">+ Add to
-                                Cart</button>
+                            <button
+                                class="w-full bg-slate-900 text-white py-3 rounded-2xl text-sm font-bold active:scale-95 transition-all flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add to Cart
+                            </button>
                         </form>
                     </div>
-                @endforeach
+                @empty
+                    {{-- Empty State - Spans the whole grid --}}
+                    <div
+                        class="col-span-full py-20 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-[3rem]">
+                        <div class="opacity-30 mb-4">
+                            {{-- Coffee/Shop icon --}}
+                            <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-400 text-center">No products found</h3>
+                        <p class="text-slate-400 text-sm mt-2">Ask the admin to add items to the menu.</p>
+                    </div>
+                @endforelse
             </div>
         </div>
 
-        <div class="col-span-3 bg-white border-l flex flex-col h-screen shadow-2xl">
+        <div class="col-span-1 bg-white border-l flex flex-col h-screen shadow-2xl">
             <div class="p-6 border-b">
                 <h2 class="text-2xl font-black text-slate-800">Current Order</h2>
                 <p class="text-sm text-slate-400">Order #{{ date('md-His') }}</p>
@@ -116,10 +153,81 @@
 
                     <button type="submit"
                         class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all active:scale-95">
-                        Place Order
+                        Pay
                     </button>
                 </form>
             </div>
         </div>
     </div>
+
+    @push('receipt')
+        <div class="receipt-container mx-auto text-base leading-tight font-mono text-black p-2" style="width: 120mm;">
+            {{-- Header --}}
+            <div class="text-center mb-6">
+                <h2 class="font-bold text-2xl uppercase">AL POS SYSTEM</h2>
+                <p class="text-sm">San Pedro, Laguna, Philippines</p>
+                <p>VAT Reg TIN: 000-123-456-000</p>
+                <p>{{ now()->format('M d, Y h:i A') }}</p>
+            </div>
+
+            {{-- Divider --}}
+            <div class="border-b border-dashed border-black mb-2"></div>
+
+            {{-- Items Table --}}
+            <table class="w-full mb-2 text-sm">
+                <thead>
+                    <tr class="text-left border-b border-dashed border-black">
+                        <th class="pb-1">ITEM</th>
+                        <th class="text-right pb-1">QTY</th>
+                        <th class="text-right pb-1">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (session('print_data'))
+                        @foreach (collect(session('print_data')) as $item)
+                            <tr>
+                                <td class="pt-1 uppercase">{{ $item['name'] }}</td>
+                                <td class="text-right pt-1">{{ $item['quantity'] }}</td>
+                                <td class="text-right pt-1">₱{{ number_format($item['price'] * $item['quantity'], 2) }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    @endif
+                </tbody>
+            </table>
+
+            {{-- Summary --}}
+            <div class="border-t border-dashed border-black pt-2 space-y-1">
+                <div class="flex justify-between">
+                    <span>SUBTOTAL:</span>
+                    @php $total = collect(session('print_data'))->sum(fn($i) => $i['price'] * $i['quantity']); @endphp
+                    <span>₱{{ number_format($total, 2) }}</span>
+                </div>
+                <div class="flex justify-between text-xl font-black border-t border-black pt-1">
+                    <span>TOTAL:</span>
+                    <span>₱{{ number_format($total, 2) }}</span>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="text-center mt-6">
+                <div class="border-b border-dashed border-black mb-2"></div>
+                <p class="font-bold">ORDER #{{ date('md-His') }}</p>
+                <p class="mt-2">This serves as your Official Receipt.</p>
+                <p>Thank you for your purchase!</p>
+                <p class="italic">Please come again.</p>
+            </div>
+        </div>
+    @endpush
+
+    @if (session('print_data'))
+        <script>
+            window.onload = function() {
+
+                setTimeout(function() {
+                    window.print();
+                }, 4000);
+            };
+        </script>
+    @endif
 </x-layout>

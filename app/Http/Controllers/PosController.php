@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 use function Pest\Laravel\session;
@@ -59,6 +60,7 @@ class PosController extends Controller
 
         DB::transaction(function () use ($cart, $total, $request) {
             $order = Order::create([
+                'user_id' => Auth::id(),
                 'total' => $total,
                 'payment_method' => $request->payment_method ?? 'cash',
             ]);
@@ -80,9 +82,12 @@ class PosController extends Controller
             }
         });
 
+        $request->session()->flash('print_data', $cart);
+
+        $summary = $request->session()->get('cart');
         $request->session()->forget('cart');
 
-        return redirect()->route('pos.index')->with('success', 'Transaction Completed!');
+        return redirect()->route('pos.index')->with('success', 'Transaction Completed!')->with('print_data', $summary);
     }
 
     public function deleteFromCart(Product $product, Request $request)

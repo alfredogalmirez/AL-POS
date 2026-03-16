@@ -1,9 +1,30 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PosController;
+use App\Http\Controllers\TransactionController;
+use App\Http\Middleware\EnsureUserIsCashier;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
-Route::post('/pos/add/{product}', [PosController::class, 'addToCart'])->name('pos.addToCart');
-Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
-Route::delete('/pos/cart/{product}', [PosController::class, 'deleteFromCart'])->name('pos.remove');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+});
+
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::middleware('auth', EnsureUserIsCashier::class)->group(function () {
+    Route::get('/', [PosController::class, 'index'])->name('pos.index');
+    Route::post('/pos/add/{product}', [PosController::class, 'addToCart'])->name('pos.addToCart');
+    Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
+    Route::delete('/pos/cart/{product}', [PosController::class, 'deleteFromCart'])->name('pos.remove');
+
+    Route::get('/transactions', [TransactionController::class, 'history'])->name('pos.history');
+});
+
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
+    Route::resource('products', ProductController::class);
+});
