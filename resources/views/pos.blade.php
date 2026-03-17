@@ -1,10 +1,9 @@
 <x-layout>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-screen w-full bg-gray-100 overflow-hidden">
-
+    <div class="grid grid-cols-1 lg:grid-cols-3 h-screen max-w-full bg-gray-100 overflow-hidden">
         <div class="col-span-2 p-6 overflow-y-auto">
             <div class="flex justify-between mb-6">
                 <h1 class="text-2xl font-bold">Menu Order</h1>
-                {{-- <input type="text" placeholder="Search menu..." class="rounded-lg border-gray-300"> --}}
+                {{-- <+ --}}
             </div>
 
             <div class="grid grid-cols-3 gap-4">
@@ -45,11 +44,9 @@
                         </form>
                     </div>
                 @empty
-                    {{-- Empty State - Spans the whole grid --}}
                     <div
                         class="col-span-full py-20 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-[3rem]">
                         <div class="opacity-30 mb-4">
-                            {{-- Coffee/Shop icon --}}
                             <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                     d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -68,7 +65,7 @@
                 <p class="text-sm text-slate-400">Order #{{ date('md-His') }}</p>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
+            <div class="flex-1 overflow-y-auto sticky top-0 h-screen p-6 space-y-6 no-scrollbar">
                 @if (session('cart') && count(session('cart')) > 0)
                     @foreach (session('cart') as $id => $details)
                         <div class="flex items-center justify-between group">
@@ -161,7 +158,7 @@
     </div>
 
     @push('receipt')
-        <div class="receipt-container mx-auto text-base leading-tight font-mono text-black p-2" style="width: 120mm;">
+        <div class="hidden print:block receipt-container mx-auto text-base leading-tight font-mono text-black p-2" style="width: 80mm;">
             {{-- Header --}}
             <div class="text-center mb-6">
                 <h2 class="font-bold text-2xl uppercase">AL POS SYSTEM</h2>

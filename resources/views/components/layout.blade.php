@@ -13,6 +13,14 @@
                 size: 80mm auto;
             }
 
+            @media dotted,
+            screen {
+                body {
+                    overflow-x: hidden;
+                    width: 100vw;
+                }
+            }
+
             body * {
                 visibility: hidden;
             }
@@ -32,6 +40,7 @@
                 padding: 0 !important;
                 background-color: white !important;
             }
+
 
             /* Only show the receipt and its children */
             #receipt-print {
@@ -55,7 +64,7 @@
 <body class="bg-gray-100 antialiased">
     <div class="flex min-h-screen">
         @auth
-            <nav class="w-64 bg-white border-r">
+            <nav class="w-64 bg-white border-r sticky top-0 h-screen">
                 <div class="col-span-1 bg-white border-r flex flex-col items-center py-4">
                     <div class="flex flex-col h-screen gap-8">
                         <div

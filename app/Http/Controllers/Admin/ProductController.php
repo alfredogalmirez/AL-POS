@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class ProductController extends Controller
 {
@@ -16,7 +17,9 @@ class ProductController extends Controller
     {
         $products = Product::latest()->paginate(10);
 
-        return view('admin.products.index', compact('products'));
+        return Inertia::render('Admin/Products/Index', [
+            'products' => $products,
+        ]);
     }
 
     /**
@@ -24,7 +27,7 @@ class ProductController extends Controller
      */
     public function create()
     {
-        return view('admin.products.create');
+        return Inertia::render('Admin/Products/Create');
     }
 
     /**
@@ -61,7 +64,9 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        return view('admin.products.edit', compact('product'));
+        return Inertia::render('Admin/Products/Edit', [
+            'product' =>  $product,
+        ]);
     }
 
     /**

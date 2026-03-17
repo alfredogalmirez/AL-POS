@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <div class="p-8 bg-slate-50 min-h-screen">
         <div class="max-w-2xl mx-auto">
             <div class="mb-8">
@@ -70,4 +70,4 @@
             </div>
         </div>
     </div>
-</x-layout>
+</x-admin-layout>

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AdminController extends Controller
 {
@@ -13,6 +13,10 @@ class AdminController extends Controller
         $totalSales = 0;
         $lowStock = Product::where('stock', '<', 10)->count();
 
-        return view('admin.dashboard', compact('totalProducts', 'totalSales', 'lowStock'));
+        return Inertia::render('Admin/Dashboard', [
+            'totalProducts' => $totalProducts,
+            'totalSales' => $totalSales,
+            'lowStock' => $lowStock,
+        ]);
     }
 }

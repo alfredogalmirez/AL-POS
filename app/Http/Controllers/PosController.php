@@ -8,6 +8,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 use function Pest\Laravel\session;
 
@@ -27,7 +28,11 @@ class PosController extends Controller
             $total += $item['price'] * $item['quantity'];
         }
 
-        return view('pos', compact('products', 'cart', 'total'));
+        return Inertia::render('POS/Index', [
+            'products' => $products,
+            'cart' => (object)$cart,
+            'total' => $total,
+        ]);
     }
 
     public function addToCart(Request $request, Product $product)

@@ -48,7 +48,7 @@
                                                         {{ $item->quantity }}x
                                                     </span>
                                                     <p class="text-slate-700 font-bold text-sm">
-                                                        {{ $item->product->name }}</p>
+                                                        {{ $item->product->name ?? 'Product Deleted' }}</p>
                                                 </div>
                                                 <p class="text-slate-400 font-medium text-sm">
                                                     ₱{{ number_format($item->price, 2) }}
