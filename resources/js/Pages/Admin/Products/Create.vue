@@ -5,11 +5,14 @@ import { ref } from 'vue';
 
 const imagePreview = ref(null);
 
+const props = defineProps({ categories: Array});
+
 const form = useForm({
     name: '',
     price: '',
     stock: 0,
     description: '',
+    category_id: '',
     image: null,
 });
 
@@ -92,6 +95,23 @@ const submit = () => {
                                 placeholder="e.g. Beef Biryani" required>
                             <p v-if="form.errors.name" class="mt-2 text-sm text-red-500 font-bold">{{ form.errors.name
                             }}</p>
+                        </div>
+
+
+                        <div class="space-y-2 mb-4">
+                            <label class="text-sm font-bold text-slate-700">Category</label>
+                            <div>
+                                <select v-model="form.category_id"
+                                    class="w-full p-4 rounded-2xl border-none bg-slate-100 focus:ring-2 focus:ring-blue-500 font-bold text-slate-700 appearance-none">
+                                    <option value="" disabled>Select a category</option>
+                                    <option v-for="category in categories" :key="category.id" :value="category.id">
+                                        {{ category.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div v-if="form.errors.category_id" class="text-red-500 text-xs font-bold mt-1">
+                                {{ form.errors.category_id }}
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-8">

@@ -1,14 +1,46 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import debounce from 'lodash/debounce';
 
 const props = defineProps({
     products: Array,
     total: [Number, String],
+    categories: Array,
+    filters: Object,
     cart: Object, // session('cart') passed from Controller
     print_data: Array // session('print_data') passed from Controller
 });
+
+const search = ref(props.filters.search || '');
+const selectedCategory = ref(props.filters.category ? Number(props.filters.category) : null)
+
+const setCategory = (id) => {
+    selectedCategory.value = id;
+
+    router.get(route('pos.index'), {
+        category: id,
+        search: search.value,
+    }, {
+        preserveState: true,
+        replace: true,
+        only: ['products'],
+    });
+}
+
+watch(search, debounce((value) => {
+    router.get(route('pos.index'), {
+        search: value,
+        category: selectedCategory.value,
+    },
+        {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+            only: ['products'],
+        });
+}, 300));
 
 // Helper for currency formatting
 const formatCurrency = (value) => {
@@ -61,9 +93,51 @@ const handleCheckout = () => {
         <div class="grid grid-cols-1 lg:grid-cols-3 h-screen max-w-full bg-gray-100 overflow-hidden">
 
             <div class="col-span-2 p-6 overflow-y-auto h-full">
-                <div class="flex justify-between mb-6">
-                    <h1 class="text-2xl font-bold">Menu Order</h1>
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-2xl font-bold">Menu Order</h1>
+                    </div>
+
+                    <div class="relative w-full md:w-72 lg:w-96">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input v-model="search" type="text" placeholder="Search products..."
+                            class="w-full pl-12 pr-4 py-4 rounded-2xl bg-wite border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm font-medium text-slate-600">
+
+                        <button v-if="search" @click="search = ''"
+                            class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-red-500 transition-colors">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
+
+                <div class="flex items-center gap-3 mb-6 overflow-x-auto no-scrollbar pb-2">
+                    <button @click="setCategory(null)" :class="[
+                        'px-8 py-3 rounded-2xl font-bold transition-all whitespace-nowrap border-2',
+                        !selectedCategory
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                            : 'bg-white text-slate-500 border-transparent hover:bg-slate-50'
+                    ]">
+                        All Menu
+                    </button>
+
+                    <button v-for="cat in categories" :key="cat.id" @click="setCategory(cat.id)" :class="[
+                        'px-8 py-3 rounded-2xl font-bold transition-all whitespace-nowrap border-2',
+                        selectedCategory == cat.id
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100'
+                            : 'bg-white text-slate-500 border-transparent hover:bg-slate-50'
+                    ]">
+                        {{ cat.name }}
+                    </button>
+                </div>
+
 
                 <div v-if="products.length > 0" class="grid grid-cols-3 gap-4">
                     <div v-for="product in products" :key="product.id"
@@ -181,9 +255,11 @@ const handleCheckout = () => {
                         </label>
                     </div>
 
-                    <button @click="handleCheckout" :disabled="form.processing"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-50">
-                        {{ form.processing ? 'Processing...' : 'Pay' }}
+                    <button @click="handleCheckout" :disabled="form.processing || total <= 0" :class="[
+                        'w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
+                        { 'active:scale-95': !form.processing && total > 0 }
+                    ]">
+                        {{ form.processing ? 'Processing...' : 'Pay ' + formatCurrency(total) }}
                     </button>
                 </div>
             </div>

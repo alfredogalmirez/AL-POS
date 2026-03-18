@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -19,19 +20,22 @@ class PosController extends Controller
      */
     public function index(Request $request)
     {
-        $products = Product::all();
+        $categories = Category::all(['id', 'name']);
 
-        $cart = $request->session()->get('cart', []);
-
-        $total = 0;
-        foreach ($cart as $item) {
-            $total += $item['price'] * $item['quantity'];
-        }
+        $products = Product::query()->when($request->search, function ($query, $search) {
+            $query->where('name', 'like', "%{$search}%");
+        })
+            ->when($request->filled('category'), function ($query) use ($request) {
+                $query->where('category_id', $request->category);
+            })
+            ->get();
 
         return Inertia::render('POS/Index', [
             'products' => $products,
-            'cart' => (object)$cart,
-            'total' => $total,
+            'categories' => $categories,
+            'filters'=> $request->only(['search', 'category']),
+            'total' => collect($request->session()->get('cart', []))->sum(fn($item) => $item['price'] * $item['quantity']),
+            'cart' => $request->session()->get('cart', []),
         ]);
     }
 
@@ -50,11 +54,13 @@ class PosController extends Controller
         }
 
         $request->session()->put('cart', $cart);
-        return redirect()->back();
+
+        return back()->with('success', 'Added to cart!');
     }
 
     public function checkout(Request $request)
     {
+        dd($request->session());
         $cart = collect($request->session()->get('cart'));
 
         if ($cart->isEmpty()) {
@@ -99,7 +105,7 @@ class PosController extends Controller
     {
         $cart = $request->session()->get('cart', []);
 
-        if(isset($cart[$product->id])){
+        if (isset($cart[$product->id])) {
             unset($cart[$product->id]);
             $request->session()->put('cart', $cart);
         }

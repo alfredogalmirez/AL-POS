@@ -20,22 +20,28 @@ const logout = () => {
 
             <nav class="flex-1 px-4 space-y-2">
                 <Link :href="route('admin.dashboard')" :class="[
-                    'block px-6 py-4 rounded-2xl font-bold transition-all',
+                    'block px-4 py-4 rounded-2xl font-bold transition-all',
                     route().current('admin.dashboard')
-                        ? 'bg-blue-50 text-blue-600'
+                        ? 'bg-blue-50 text-blue-600 px-6'
                         : 'text-slate-500 hover:bg-slate-50'
                 ]">
                     Dashboard
                 </Link>
 
-                <Link :href="route('admin.products.index')" :class="[
-                    'block px-6 py-4 rounded-2xl font-bold transition-all',
-                    route().current('admin.products.index')
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-slate-500 hover:bg-slate-50'
-                ]">
-                    Inventory
-                </Link>
+                <div class="pt-4">
+                    <p class="px-6 py-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Management</p>
+                    <Link :href="route('admin.products.index')" :class="['block px-4 py-4 rounded-2xl font-bold transition-all',
+                        route().current('admin.products.index')
+                            ? 'bg-blue-50 text-blue-600 px-6'
+                            : 'text-slate-500 hover:bg-slate-50'
+                    ]">Inventory</Link>
+                    <Link :href="route('admin.categories')" :class="[
+                        'block py-4 px-4 rounded-2xl font-bold transition-all',
+                        route().current('admin.categories')
+                            ? 'bg-blue-50 text-blue-600 px-6'
+                            : 'text-slate-500 hover:bg-slate-50'
+                    ]">Categories</Link>
+                </div>
             </nav>
 
             <div class="p-6 border-t border-slate-50">
