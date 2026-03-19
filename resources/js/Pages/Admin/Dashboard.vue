@@ -43,7 +43,7 @@ const formatCurrency = (value) => {
                     </div>
 
                     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-                        <p class="text-slate-500 font-bold uppercase text-xs tracking-wider">Daily Sales</p>
+                        <p class="text-slate-500 font-bold uppercase text-xs tracking-wider">Total Sales</p>
                         <h2 class="text-4xl font-black text-slate-900 mt-2">
                             {{ formatCurrency(totalSales) }}
                         </h2>

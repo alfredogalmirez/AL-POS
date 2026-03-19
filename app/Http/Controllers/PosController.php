@@ -60,7 +60,6 @@ class PosController extends Controller
 
     public function checkout(Request $request)
     {
-        dd($request->session());
         $cart = collect($request->session()->get('cart'));
 
         if ($cart->isEmpty()) {
@@ -68,6 +67,10 @@ class PosController extends Controller
         }
 
         $total = $cart->sum(fn($item) => $item['price'] * $item['quantity']);
+
+        $cartTotal = 
+        $amountReceived =
+        $changeDue =
 
         DB::transaction(function () use ($cart, $total, $request) {
             $order = Order::create([

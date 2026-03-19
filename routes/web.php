@@ -2,11 +2,11 @@
 
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\TransactionController;
 use App\Http\Middleware\EnsureUserIsCashier;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -36,11 +36,17 @@ Route::middleware('auth', EnsureUserIsCashier::class)->group(function () {
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
+
     Route::resource('products', ProductController::class);
+
     Route::get('/categories/add', [CategoryController::class, 'index'])->name('categories');
     Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
     Route::put('/categories/{category}/edit', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}', [CategoryController::class, 'delete'])->name('categories.delete');
+
+    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('/transaction', [TransactionController::class, 'export'])->name('transactions.export');
+
 });
 
 require __DIR__.'/auth.php';

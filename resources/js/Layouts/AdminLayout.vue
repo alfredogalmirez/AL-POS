@@ -41,6 +41,12 @@ const logout = () => {
                             ? 'bg-blue-50 text-blue-600 px-6'
                             : 'text-slate-500 hover:bg-slate-50'
                     ]">Categories</Link>
+                    <Link :href="route('admin.transactions.index')" :class="[
+                        'block py-4 px-4 rounded-2xl font-bold transition-all',
+                        route().current('admin.transactions.index')
+                            ? 'bg-blue-50 text-blue-600 px-6'
+                            : 'text-slate-500 hover:bg-slate-50'
+                    ]">Transactions</Link>
                 </div>
             </nav>
 

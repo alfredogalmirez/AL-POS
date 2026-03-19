@@ -16,6 +16,8 @@ const props = defineProps({
 const search = ref(props.filters.search || '');
 const selectedCategory = ref(props.filters.category ? Number(props.filters.category) : null)
 
+const amountReceived = ref('0');
+
 const setCategory = (id) => {
     selectedCategory.value = id;
 
@@ -66,7 +68,10 @@ const removeFromCart = (id) => {
 
 const form = useForm({
     payment_method: 'cash',
+    amount_received: '',
 });
+
+console.log(form.amount_received);
 
 const handleCheckout = () => {
     form.post(route('pos.checkout'), {
@@ -237,7 +242,8 @@ const handleCheckout = () => {
                             <span class="text-2xl font-black text-blue-600">{{ formatCurrency(total) }}</span>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 mb-4">
+                    <div class="grid grid-cols-3 gap-2 mb-4">
+                        <p class="text-lg font-black text-slate-800 flex items-center">Payment Method</p>
                         <label class="cursor-pointer">
                             <input type="radio" v-model="form.payment_method" value="cash" class="peer hidden">
                             <div
@@ -253,6 +259,15 @@ const handleCheckout = () => {
                                 GCASH
                             </div>
                         </label>
+                    </div>
+
+                    <div v-if="form.payment_method === 'cash'" class="flex gap-4">
+                        <p class="text-lg font-black text-slate-800 flex items-center">Amount Received</p>
+                        <input v-model="form.amount_received" type="number" placeholder="Input amount received..." class="rounded-lg border-1 flex-1 focus:ring-2 focus:ring-blue-500 transition-all outline-none">
+                    </div>
+
+                    <div class="flex justify-center items-center">
+                        <span v-if="form.amount_received > 0" class="text-lg font-black text-slate-800">Change: {{ form.amount_received - total }} </span>
                     </div>
 
                     <button @click="handleCheckout" :disabled="form.processing || total <= 0" :class="[
