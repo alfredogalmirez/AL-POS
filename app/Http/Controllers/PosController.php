@@ -68,15 +68,13 @@ class PosController extends Controller
 
         $total = $cart->sum(fn($item) => $item['price'] * $item['quantity']);
 
-        $cartTotal = 
-        $amountReceived =
-        $changeDue =
-
         DB::transaction(function () use ($cart, $total, $request) {
             $order = Order::create([
                 'user_id' => Auth::id(),
                 'total' => $total,
                 'payment_method' => $request->payment_method ?? 'cash',
+                'amount_received' => $request->amounte_received,
+                'change'
             ]);
 
 

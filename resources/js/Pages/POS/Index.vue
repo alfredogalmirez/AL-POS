@@ -68,7 +68,7 @@ const removeFromCart = (id) => {
 
 const form = useForm({
     payment_method: 'cash',
-    amount_received: '',
+    amount_received: 0,
 });
 
 console.log(form.amount_received);
@@ -267,10 +267,10 @@ const handleCheckout = () => {
                     </div>
 
                     <div class="flex justify-center items-center">
-                        <span v-if="form.amount_received > 0" class="text-lg font-black text-slate-800">Change: {{ form.amount_received - total }} </span>
+                        <span v-if="form.amount_received >= total && Object.keys(cart).length > 0" class="text-lg font-black text-slate-800">Change: {{ formatCurrency(form.amount_received - total) }} </span>
                     </div>
 
-                    <button @click="handleCheckout" :disabled="form.processing || total <= 0" :class="[
+                    <button @click="handleCheckout" :disabled="form.processing || total <= 0 && cart.length === 0 || form.amount_received < total" :class="[
                         'w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
                         { 'active:scale-95': !form.processing && total > 0 }
                     ]">
