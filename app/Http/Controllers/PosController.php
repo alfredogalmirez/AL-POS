@@ -9,6 +9,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 use function Pest\Laravel\session;
@@ -33,7 +34,7 @@ class PosController extends Controller
         return Inertia::render('POS/Index', [
             'products' => $products,
             'categories' => $categories,
-            'filters'=> $request->only(['search', 'category']),
+            'filters' => $request->only(['search', 'category']),
             'total' => collect($request->session()->get('cart', []))->sum(fn($item) => $item['price'] * $item['quantity']),
             'cart' => $request->session()->get('cart', []),
         ]);
@@ -67,14 +68,23 @@ class PosController extends Controller
         }
 
         $total = $cart->sum(fn($item) => $item['price'] * $item['quantity']);
+        $amountReceived = $request->amount_received;
+        $change = $amountReceived - $total;
 
-        DB::transaction(function () use ($cart, $total, $request) {
+        $latestOrder = Order::latest('id')->first();
+        $nextId = $latestOrder ? $latestOrder->id + 1 : 1;
+
+        $invoiceId = 'ORD-' . now()->format('Y') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+
+        DB::transaction(function () use ($cart, $change, $invoiceId, $total, $request) {
             $order = Order::create([
+                'invoice_id' => $invoiceId,
                 'user_id' => Auth::id(),
                 'total' => $total,
                 'payment_method' => $request->payment_method ?? 'cash',
-                'amount_received' => $request->amounte_received,
-                'change'
+                'subtotal' => $total,
+                'amount_received' => $request->amount_received,
+                'change' => $change,
             ]);
 
 

@@ -4,12 +4,13 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CashierTransactionController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Middleware\EnsureUserIsCashier;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
+
 
 
 Route::middleware('auth')->group(function () {
@@ -31,7 +32,7 @@ Route::middleware('auth', EnsureUserIsCashier::class)->group(function () {
     Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
     Route::delete('/pos/cart/{product}', [PosController::class, 'deleteFromCart'])->name('pos.remove');
 
-    Route::get('/transactions', [TransactionController::class, 'history'])->name('pos.history');
+    Route::get('/pos/transactions', [CashierTransactionController::class, 'history'])->name('pos.history');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {

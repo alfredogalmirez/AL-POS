@@ -2,70 +2,60 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\TransactionsExport;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TransactionController extends Controller
 {
-    public function index() {
+    public function index(Request $request)
+    {
+        $date = $request->input('date');
+        $month = $request->input('month');
+        $year = $request->input('year');
+
+        $statsQuery = Order::query()
+            ->when($date, fn($q) => $q->whereDate('created_at', $date))
+            ->when($month, fn($q) => $q->whereMonth('created_at', $month))
+            ->when($year, fn($q) => $q->whereYear('created_at', $year));
+
+        $isFiltering = $date || $month || $year;
 
         $stats = [
-            'today_total' => Order::whereDate('created_at', today())->sum('total'),
-            'count' => Order::count(),
-            'avg' => Order::avg('total') ?? 0,
+            'today_total' => $isFiltering ? (clone $statsQuery)->sum('total') : Order::whereDate('created_at', today())->sum('total'),
+            'count' => (clone $statsQuery)->count(),
+            'avg' => (clone $statsQuery)->avg('total') ?? 0,
         ];
 
 
-        $orders = Order::with(['items.product', 'cashier'])->withCount('items')
+        $orders = Order::with(['items.product', 'cashier'])
+            ->withCount('items')
+            ->when($date, fn($q) => $q->whereDate('created_at', $date))
+            ->when($month, fn($q) => $q->whereMonth('created_at', $month))
+            ->when($year, fn($q) => $q->whereYear('created_at', $year))
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
-            return Inertia::render('Admin/Transactions/Index', [
-                'transactions' => $orders,
-                'stats' => $stats,
-            ]);
+        return Inertia::render('Admin/Transactions/Index', [
+            'transactions' => $orders,
+            'stats' => $stats,
+            'filters' => $request->only(['date', 'month', 'year'])
+        ]);
     }
 
-    public function export(){
+    public function export()
+    {
 
         $fileName = 'POS_Export_' . date('Y-m-d_His') . '.csv';
 
-        $headers = [
-            "Content-type" => "text/csv",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma" => "no-cache",
-            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
-            "Expires" => "0"
-        ];
+        while (ob_get_level() > 0) ob_end_clean();
 
-        $columns = ['Date', 'Invoice', 'Cashier', 'Product', 'Qty', 'Price', 'Total', 'Payment'];
+        $fileName = 'POS_Export_' . date('Y-m-d_His') . '.xlsx';
 
-        $callback = function() use ($columns) {
-            $file = fopen('php://output', 'w');
-
-            fputcsv($file, $columns);
-
-            Order::with(['items.product', 'cashier'])->chunk(100, function ($orders) use ($file) {
-                foreach($orders as $order){
-                    foreach($order->items as $item) {
-                      fputcsv($file, [
-                        $order->created_at->format('Y-m-d H:i'),
-                        $order->id ?? 'N/A',
-                        $order->cashier->name ?? 'System',
-                        $item->product->name ?? 'N/A',
-                        $item->quantity,
-                        $item->price,
-                        $item->quantity * $item->price,
-                        strtoupper($order->payment_method ?? 'CASH'),
-                    ]);
-                    }
-                }
-            });
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return Excel::download(new TransactionsExport, $fileName);
     }
 }
