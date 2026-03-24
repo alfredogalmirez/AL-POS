@@ -19,10 +19,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
-});
+// Route::middleware('guest')->group(function () {
+//     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+//     Route::post('/login', [AuthController::class, 'login']);
+// });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -33,6 +33,7 @@ Route::middleware('auth', EnsureUserIsCashier::class)->group(function () {
     Route::delete('/pos/cart/{product}', [PosController::class, 'deleteFromCart'])->name('pos.remove');
 
     Route::get('/pos/transactions', [CashierTransactionController::class, 'history'])->name('pos.history');
+    Route::post('/post/transaction/{order}/void', [CashierTransactionController::class, 'voidOrder'])->name('pos.transaction.void');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {

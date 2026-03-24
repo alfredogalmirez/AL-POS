@@ -16,8 +16,6 @@ const props = defineProps({
 const search = ref(props.filters.search || '');
 const selectedCategory = ref(props.filters.category ? Number(props.filters.category) : null)
 
-const amountReceived = ref('0');
-
 const setCategory = (id) => {
     selectedCategory.value = id;
 
