@@ -81,8 +81,9 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|max:255',
+            'category_id' => 'required|exists:categories,id',
             'price' => 'required|numeric',
-            'stock' => 'required|integer',
+            'stock' => 'required|integer|min:0',
         ]);
 
         if($request->hasFile('image')){

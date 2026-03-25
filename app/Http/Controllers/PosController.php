@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -48,6 +49,7 @@ class PosController extends Controller
             $cart[$product->id]['quantity']++;
         } else {
             $cart[$product->id] = [
+                "id" => $product->id,
                 "name" => $product->name,
                 "quantity" => 1,
                 "price" => $product->price,
@@ -56,7 +58,67 @@ class PosController extends Controller
 
         $request->session()->put('cart', $cart);
 
+        $request->session()->save();
+
         return back()->with('success', 'Added to cart!');
+    }
+
+    public function updateQuantity(Request $request)
+    {
+        $cart = $request->session()->get('cart', []);
+        $id = $request->product_id;
+        $change = $request->change;
+
+
+        if (isset($cart[$id])) {
+            $newQty = $cart[$id]['quantity'] + $change;
+
+            if ($newQty < 1) {
+                unset($cart[$id]);
+            } else {
+                $product = Product::find($id);
+
+                if ($product && $newQty  > $product->stock) {
+                    return back()->with('error', 'Not enough stock!');
+                }
+
+                $cart[$id]['quantity'] = $newQty;
+            }
+
+            $request->session()->put('cart', $cart);
+        }
+
+        return back();
+    }
+
+    public function setQuantity(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required',
+            'quantity' => 'required|integer|min:0',
+        ]);
+
+        $cart = $request->session()->get('cart', []);
+        $id = $request->product_id;
+        $newQty = (int) $request->quantity;
+
+        if (isset($cart[$id])) {
+            if ($newQty <= 0) {
+                unset($cart[$id]);
+            } else {
+                $product = Product::find($id);
+
+                if ($product && $newQty > $product->stock) {
+                    return back()->with('error', "Only {$product->stock} items in stock.");
+                }
+
+                $cart[$id]['quantity'] = $newQty;
+            }
+
+            $request->session()->put('cart', $cart);
+        }
+
+        return back();
     }
 
     public function checkout(Request $request)
@@ -76,33 +138,45 @@ class PosController extends Controller
 
         $invoiceId = 'ORD-' . now()->format('Y') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
-        DB::transaction(function () use ($cart, $change, $invoiceId, $total, $request) {
-            $order = Order::create([
-                'invoice_id' => $invoiceId,
-                'user_id' => Auth::id(),
-                'total' => $total,
-                'payment_method' => $request->payment_method ?? 'cash',
-                'subtotal' => $total,
-                'amount_received' => $request->amount_received,
-                'change' => $change,
-            ]);
+        try {
+            DB::transaction(function () use ($cart, $change, $invoiceId, $total, $request) {
+                foreach ($cart as $id => $details) {
+                    $product = Product::find($id);
+
+                    if (!$product || $product->stock < $details['quantity']) {
+                        throw new Exception("Insufficient stock for " . ($product->name ?? 'Unknown Item'));
+                    }
+                }
+
+                $order = Order::create([
+                    'invoice_id' => $invoiceId,
+                    'user_id' => Auth::id(),
+                    'total' => $total,
+                    'payment_method' => $request->payment_method ?? 'cash',
+                    'subtotal' => $total,
+                    'amount_received' => $request->amount_received,
+                    'change' => $change,
+                ]);
 
 
-            $items = $cart->map(fn($details, $id) => [
-                'order_id' => $order->id,
-                'product_id' => $id,
-                'quantity' => $details['quantity'],
-                'price' => $details['price'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ])->values()->all();
+                $items = $cart->map(fn($details, $id) => [
+                    'order_id' => $order->id,
+                    'product_id' => $id,
+                    'quantity' => $details['quantity'],
+                    'price' => $details['price'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])->values()->all();
 
-            OrderItem::insert($items);
+                OrderItem::insert($items);
 
-            foreach ($cart as $id => $details) {
-                Product::where('id', $id)->decrement('stock', $details['quantity']);
-            }
-        });
+                foreach ($cart as $id => $details) {
+                    Product::where('id', $id)->decrement('stock', $details['quantity']);
+                }
+            });
+        } catch (Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         $request->session()->flash('print_data', $cart);
 
@@ -122,53 +196,5 @@ class PosController extends Controller
         }
 
         return back()->with('success', 'Item removed.');
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }

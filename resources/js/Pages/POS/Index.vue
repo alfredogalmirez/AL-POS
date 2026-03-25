@@ -50,12 +50,32 @@ const formatCurrency = (value) => {
     }).format(value);
 };
 
+const page = usePage();
+
+const cartArray = computed(() => Object.values(props.cart || {}));
+
+const cart = computed(() => page.props.cart || {});
+
 // Handle Add to Cart via Inertia
-const addToCart = (productId) => {
-    router.post(route('pos.addToCart', productId), {}, {
+const addToCart = (product) => {
+    if (product.stock <= 0) {
+        alert("Cannot add to cart: Out of Stock!");
+        return;
+    }
+
+    const existingItem = cartArray.value.find(i => i.id === product.id);
+
+    if (existingItem && existingItem.quantity >= product.stock) {
+        alert("Maximum stock reached!");
+        return;
+    }
+
+    router.post(route('pos.addToCart', product), {}, {
         preserveScroll: true,
     });
 };
+
+console.log(page.props);
 
 // Handle Remove via Inertia
 const removeFromCart = (id) => {
@@ -75,6 +95,34 @@ const handleCheckout = () => {
     form.post(route('pos.checkout'), {
         preventScroll: true,
         onSuccess: () => form.reset(),
+    });
+}
+
+const updateQuantity = (id, amount) => {
+    router.post(route('pos.updateQuantity'), {
+        product_id: id,
+        change: amount,
+    }, {
+        preventScroll: true,
+        onSuccess: () => {
+
+        }
+    });
+}
+
+const handleManualInput = (id, event) => {
+    const newValue = parseInt(event.target.value);
+
+    if (newValue <= 0) {
+        removeFromCart(id);
+        return;
+    }
+
+    router.post(route('pos.setQuantity'), {
+        product_id: id,
+        quantity: newValue,
+    }, {
+        preserveScroll: true,
     });
 }
 
@@ -144,7 +192,20 @@ const handleCheckout = () => {
 
                 <div v-if="products.length > 0" class="grid grid-cols-3 gap-4">
                     <div v-for="product in products" :key="product.id"
-                        class="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 hover:border-blue-500 hover:shadow-md transition-all group">
+                        class="relative bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 hover:border-blue-500 hover:shadow-md transition-all group">
+
+                        <div class="absolute top-3 left-3 z-10 px-2 py-1 rounded-lg flex items-center gap-1.5 border"
+                            :class="product.stock > 0
+                                ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                : 'bg-red-50 text-red-600 border-red-100'">
+
+                            <span class="w-1.5 h-1.5 rounded-full"
+                                :class="product.stock > 0 ? 'bg-green-500' : 'bg-red-500'"></span>
+
+                            <span class="text-[10px] font-black uppercase tracking-wider">
+                                {{ product.stock > 0 ? `${product.stock} IN STOCK` : 'SOLD OUT' }}
+                            </span>
+                        </div>
 
                         <div
                             class="aspect-square w-full mb-4 overflow-hidden rounded-[1.5rem] bg-slate-50 border border-slate-50">
@@ -162,14 +223,14 @@ const handleCheckout = () => {
                             <p class="text-blue-600 font-black text-lg">{{ formatCurrency(product.price) }}</p>
                         </div>
 
-                        <button @click="addToCart(product.id)"
-                            class="w-full bg-slate-900 text-white py-3 rounded-2xl text-sm font-bold active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <button @click="addToCart(product)" :disabled="product.stock <= 0" :class="['w-full py-3 rounded-2xl text-sm font-bold active:scale-95 transition-all flex items-center justify-center gap-2',
+                            product.stock > 0 ? 'bg-slate-900 text-white active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        ]">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                     d="M12 4v16m8-8H4" />
                             </svg>
-                            Add to Cart
-                        </button>
+                            {{ product.stock > 0 ? 'Add to Cart' : 'Out of Stock' }} </button>
                     </div>
                 </div>
 
@@ -193,20 +254,40 @@ const handleCheckout = () => {
 
                 <div class="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
                     <div v-if="cart && Object.keys(cart).length > 0" class="space-y-6">
-                        <div v-for="(details, id) in cart" :key="id" class="flex items-center justify-between group">
-                            <div class="flex items-center gap-4">
-                                <div
-                                    class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-700">
-                                    {{ details.quantity }}x
-                                </div>
-                                <div>
-                                    <p class="font-bold text-slate-800 leading-tight">{{ details.name }}</p>
+                        <div v-for="(details, id) in cart" :key="id"
+                            class="flex items-center bg-white p-4 rounded-3xl border border-slate-100 hover:border-blue-100 transition-all group">
+
+                            <div class="flex items-center gap-4 flex-1 min-w-0">
+                                <div class="min-w-0 flex-1">
+                                    <p
+                                        class="font-black text-slate-800 leading-tight uppercase text-sm tracking-tight truncate">
+                                        {{ details.name }}</p>
+
                                     <p class="text-xs text-slate-400">{{ formatCurrency(details.price) }}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <span class="font-bold text-slate-700">{{ formatCurrency(details.price *
-                                    details.quantity) }}</span>
+
+                            <div
+                                class="flex items-center justify-center bg-slate-100 rounded-2xl p-1 border border-slate-100 mx-4 flex-shrink-0 w-[140px]">
+                                <button @click="updateQuantity(id, -1)"
+                                    class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm hover:bg-red-50 hover:text-red-600 transition-colors">
+                                    <span class="font-bold leading-none">-</span>
+                                </button>
+
+                                <input type="number" :value="details.quantity" @change="handleManualInput(id, $event)"
+                                    class="w-14 text-center bg-transparent border-none focus:ring-0 font-black text-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+
+                                <button @click="updateQuantity(id, 1)"
+                                    class="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                                    <span class="font-bold">+</span>
+                                </button>
+                            </div>
+
+
+                            <div class="flex items-center gap-4 justify-end w-[110px] flex-shrink-0">
+                                <span class="font-bold text-slate-700 text-sm whitespace-nowrap">{{
+                                    formatCurrency(details.price *
+                                        details.quantity) }}</span>
                                 <button @click="removeFromCart(id)"
                                     class="text-slate-300 hover:text-red-500 transition-colors">
                                     <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -261,17 +342,22 @@ const handleCheckout = () => {
 
                     <div v-if="form.payment_method === 'cash'" class="flex gap-4">
                         <p class="text-lg font-black text-slate-800 flex items-center">Amount Received</p>
-                        <input v-model="form.amount_received" type="number" placeholder="Input amount received..." class="rounded-lg border-1 flex-1 focus:ring-2 focus:ring-blue-500 transition-all outline-none">
+                        <input v-model="form.amount_received" type="number" placeholder="Input amount received..."
+                            class="rounded-lg border-1 flex-1 focus:ring-2 focus:ring-blue-500 transition-all outline-none">
                     </div>
 
                     <div class="flex justify-center items-center">
-                        <span v-if="form.amount_received >= total && Object.keys(cart).length > 0" class="text-lg font-black text-slate-800">Change: {{ formatCurrency(form.amount_received - total) }} </span>
+                        <span v-if="form.amount_received >= total && Object.keys(cart).length > 0"
+                            class="text-lg font-black text-slate-800">Change: {{ formatCurrency(form.amount_received -
+                                total) }} </span>
                     </div>
 
-                    <button @click="handleCheckout" :disabled="form.processing || total <= 0 && cart.length === 0 || form.amount_received < total" :class="[
-                        'w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
-                        { 'active:scale-95': !form.processing && total > 0 }
-                    ]">
+                    <button @click="handleCheckout"
+                        :disabled="form.processing || total <= 0 && cart.length === 0 || form.amount_received < total"
+                        :class="[
+                            'w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
+                            { 'active:scale-95': !form.processing && total > 0 }
+                        ]">
                         {{ form.processing ? 'Processing...' : 'Pay ' + formatCurrency(total) }}
                     </button>
                 </div>

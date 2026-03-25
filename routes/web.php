@@ -29,6 +29,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware('auth', EnsureUserIsCashier::class)->group(function () {
     Route::get('/', [PosController::class, 'index'])->name('pos.index');
     Route::post('/pos/add/{product}', [PosController::class, 'addToCart'])->name('pos.addToCart');
+    Route::post('/pos/quantity/update', [PosController::class, 'updateQuantity'])->name('pos.updateQuantity');
+    Route::post('/pos/quantity/set', [PosController::class, 'setQuantity'])->name('pos.setQuantity');
     Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
     Route::delete('/pos/cart/{product}', [PosController::class, 'deleteFromCart'])->name('pos.remove');
 

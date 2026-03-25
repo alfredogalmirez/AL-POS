@@ -31,6 +31,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'cart' => fn() => $request->session()->get('cart', []),
             'auth' => [
                 'user' => $request->user(),
             ],
