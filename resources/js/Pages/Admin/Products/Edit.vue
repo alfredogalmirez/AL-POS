@@ -16,7 +16,7 @@ const form = useForm({
     stock: props.product.stock,
     description: props.product.description,
     image: null,
-    category_id: '',
+    category_id: props.product.category_id,
 });
 
 const imagePreview = ref(props.product.image ? `/storage/${props.product.image}` : null);

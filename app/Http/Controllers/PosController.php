@@ -36,29 +36,32 @@ class PosController extends Controller
             'products' => $products,
             'categories' => $categories,
             'filters' => $request->only(['search', 'category']),
-            'total' => collect($request->session()->get('cart', []))->sum(fn($item) => $item['price'] * $item['quantity']),
+            'total' => collect($request->session()->get('cart', []))->sum(fn($item) => $item['price'] * $item['quantity'] ?? 0),
             'cart' => $request->session()->get('cart', []),
         ]);
     }
 
     public function addToCart(Request $request, Product $product)
     {
+        // Initialize Session for Cart
         $cart = $request->session()->get('cart', []);
 
+        dd($cart);
+
+        // Guard for Adding to Cart and for existing
         if (isset($cart[$product->id])) {
             $cart[$product->id]['quantity']++;
         } else {
             $cart[$product->id] = [
-                "id" => $product->id,
-                "name" => $product->name,
-                "quantity" => 1,
-                "price" => $product->price,
+                'id' => $product->id,
+                'name' => $product->name,
+                'quantity' => 1,
+                'price' => (float) $product->price,
             ];
         }
 
+        //Save to the Cart Session
         $request->session()->put('cart', $cart);
-
-        $request->session()->save();
 
         return back()->with('success', 'Added to cart!');
     }

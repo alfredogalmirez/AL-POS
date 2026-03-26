@@ -10,6 +10,7 @@ use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Middleware\EnsureUserIsCashier;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\CreateCashierController;
 
 
 
@@ -51,6 +52,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transaction', [TransactionController::class, 'export'])->name('transactions.export');
 
+    // Cashier Account Creation
+    Route::get('/add/cashier', [CreateCashierController::class, 'create'])->name('cashier.create');
+    Route::post('/add/cashier', [CreateCashierController::class, 'store'])->name('cashier.store');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

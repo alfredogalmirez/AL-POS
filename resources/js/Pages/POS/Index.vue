@@ -9,8 +9,8 @@ const props = defineProps({
     total: [Number, String],
     categories: Array,
     filters: Object,
-    cart: Object, // session('cart') passed from Controller
-    print_data: Array // session('print_data') passed from Controller
+    cart: Object,
+    print_data: Array
 });
 
 const search = ref(props.filters.search || '');
@@ -75,8 +75,6 @@ const addToCart = (product) => {
     });
 };
 
-console.log(page.props);
-
 // Handle Remove via Inertia
 const removeFromCart = (id) => {
     router.delete(route('pos.remove', id), {
@@ -88,8 +86,6 @@ const form = useForm({
     payment_method: 'cash',
     amount_received: 0,
 });
-
-console.log(form.amount_received);
 
 const handleCheckout = () => {
     form.post(route('pos.checkout'), {
@@ -196,7 +192,7 @@ const handleManualInput = (id, event) => {
 
                         <div class="absolute top-3 left-3 z-10 px-2 py-1 rounded-lg flex items-center gap-1.5 border"
                             :class="product.stock > 0
-                                ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                ? 'bg-green-50 text-green-600 border-slate-200'
                                 : 'bg-red-50 text-red-600 border-red-100'">
 
                             <span class="w-1.5 h-1.5 rounded-full"
