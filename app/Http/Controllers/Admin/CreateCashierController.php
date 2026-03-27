@@ -23,9 +23,11 @@ class CreateCashierController extends Controller
             'role' => 'required|in:admin,cashier',
         ]);
 
+        $finalUsername = 'CSR-' . $validated['username'];
+
         User::create([
             'name' => $validated['name'],
-            'username' => $validated['username'],
+            'username' => $finalUsername,
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
         ]);

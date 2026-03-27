@@ -29,7 +29,7 @@ const deleteProduct = (id) => {
 
 <template>
 
-    <Head title="Inventory Management | AL-POS" />
+    <Head title="Inventory Management" />
 
     <AdminLayout>
         <div class="p-8 bg-slate-50 min-h-full">

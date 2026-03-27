@@ -10,7 +10,6 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 use function Pest\Laravel\session;
@@ -45,8 +44,6 @@ class PosController extends Controller
     {
         // Initialize Session for Cart
         $cart = $request->session()->get('cart', []);
-
-        dd($cart);
 
         // Guard for Adding to Cart and for existing
         if (isset($cart[$product->id])) {

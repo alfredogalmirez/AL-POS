@@ -47,6 +47,12 @@ const logout = () => {
                             ? 'bg-blue-50 text-blue-600 px-6'
                             : 'text-slate-500 hover:bg-slate-50'
                     ]">Transactions</Link>
+                    <Link :href="route('admin.cashier.create')" :class="[
+                        'block py-4 px-4 rounded-2xl font-bold transition-all',
+                        route().current('admin.cashier.create')
+                            ? 'bg-blue-50 text-blue-600 px-6'
+                            : 'text-slate-500 hover:bg-slate-50'
+                    ]">Add Cashier</Link>
                 </div>
             </nav>
 

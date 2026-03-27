@@ -53,8 +53,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/transaction', [TransactionController::class, 'export'])->name('transactions.export');
 
     // Cashier Account Creation
-    Route::get('/add/cashier', [CreateCashierController::class, 'create'])->name('cashier.create');
-    Route::post('/add/cashier', [CreateCashierController::class, 'store'])->name('cashier.store');
+    Route::get('/cashier/add', [CreateCashierController::class, 'create'])->name('cashier.create');
+    Route::post('/cashier/add', [CreateCashierController::class, 'store'])->name('cashier.store');
 });
 
 require __DIR__ . '/auth.php';

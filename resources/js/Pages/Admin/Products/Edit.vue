@@ -38,7 +38,7 @@ const submit = () => {
 
 <template>
 
-    <Head title="Edit Product | AL-POS" />
+    <Head title="Edit Product" />
 
     <AdminLayout>
         <div class="max-w-4xl mx-auto">

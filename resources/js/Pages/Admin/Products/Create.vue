@@ -36,7 +36,7 @@ const submit = () => {
 
 <template>
 
-    <Head title="Add New Product | AL-POS" />
+    <Head title="Add New Product" />
 
     <AdminLayout>
         <div class="p-8 bg-slate-50 min-h-full">
