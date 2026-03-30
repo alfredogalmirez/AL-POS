@@ -88,10 +88,26 @@ const form = useForm({
 });
 
 const handleCheckout = () => {
-    form.post(route('pos.checkout'), {
+    if(form.payment_method === 'cash'){
+         form.post(route('pos.checkout'), {
         preventScroll: true,
         onSuccess: () => form.reset(),
     });
+    } else {
+       if(form.payment_method === 'gcash'){
+        startPaymongoPayment();
+       }
+    }
+}
+
+const startPaymongoPayment = async () => {
+     try {
+            const response = await axios.post(route('pos.checkout.paymongo'));
+
+            window.location.href = response.data.checkout_url
+        } catch (error) {
+            alert('Could not connect to PayMongo. Please try again.');
+        }
 }
 
 const updateQuantity = (id, amount) => {
@@ -349,7 +365,7 @@ const handleManualInput = (id, event) => {
                     </div>
 
                     <button @click="handleCheckout"
-                        :disabled="form.processing || total <= 0 && cart.length === 0 || form.amount_received < total"
+                        :disabled="form.processing || total <= 0 && cart.length === 0 || (payment_method === 'cash' && form.amount_received < total)"
                         :class="[
                             'w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
                             { 'active:scale-95': !form.processing && total > 0 }

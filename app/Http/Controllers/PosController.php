@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 
 use function Pest\Laravel\session;
@@ -129,9 +130,7 @@ class PosController extends Controller
             return back()->with('error', 'Cart is empty!');
         }
 
-        $total = $cart->sum(fn($item) => $item['price'] * $item['quantity']);
         $amountReceived = $request->amount_received;
-        $change = $amountReceived - $total;
 
         $latestOrder = Order::latest('id')->first();
         $nextId = $latestOrder ? $latestOrder->id + 1 : 1;
@@ -139,41 +138,12 @@ class PosController extends Controller
         $invoiceId = 'ORD-' . now()->format('Y') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
         try {
-            DB::transaction(function () use ($cart, $change, $invoiceId, $total, $request) {
-                foreach ($cart as $id => $details) {
-                    $product = Product::find($id);
-
-                    if (!$product || $product->stock < $details['quantity']) {
-                        throw new Exception("Insufficient stock for " . ($product->name ?? 'Unknown Item'));
-                    }
-                }
-
-                $order = Order::create([
-                    'invoice_id' => $invoiceId,
-                    'user_id' => Auth::id(),
-                    'total' => $total,
-                    'payment_method' => $request->payment_method ?? 'cash',
-                    'subtotal' => $total,
-                    'amount_received' => $request->amount_received,
-                    'change' => $change,
-                ]);
-
-
-                $items = $cart->map(fn($details, $id) => [
-                    'order_id' => $order->id,
-                    'product_id' => $id,
-                    'quantity' => $details['quantity'],
-                    'price' => $details['price'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ])->values()->all();
-
-                OrderItem::insert($items);
-
-                foreach ($cart as $id => $details) {
-                    Product::where('id', $id)->decrement('stock', $details['quantity']);
-                }
-            });
+            $this->proccessOrderInDatabase(
+                $cart,
+                $request->payment_method ?? 'cash',
+                $request->amount_received,
+                $invoiceId,
+            );
         } catch (Exception $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -186,6 +156,50 @@ class PosController extends Controller
         return redirect()->route('pos.index')->with('success', 'Transaction Completed!')->with('print_data', $summary);
     }
 
+    public function initiatePaymongo(Request $request)
+    {
+        $cart = collect($request->session()->get('cart'));
+
+        if ($cart->isEmpty()) {
+            return response()->json(['error' => 'Cart is empty!'], 400);
+        }
+
+        $total = $cart->sum(fn($item) => $item['price'] * $item['quantity']);
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Basic ' . base64_encode(config('services.paymongo.secret') . ':'),
+            'Content-Type' => 'application/json',
+        ])->post('https://api.paymongo.com/v1/checkout_sessions', [
+            'data' => [
+                'attributes' => [
+                    'send_email_receipt' => true,
+                    'show_description' => true,
+                    'payment_method_types' => ['gcash', 'paymaya'],
+                    'currency' => 'PHP',
+                    'description' => 'POS Order Items',
+                    'line_items' => $cart->map(fn($item) => [
+                        'amount' => (int)($item['price'] * 100), // in centavos
+                        'currency' => 'PHP',
+                        'name' => $item['name'],
+                        'quantity' => $item['quantity'],
+                    ])->values()->all(),
+                    'success_url' => route('pos.index', ['payment' => 'success']),
+                    'cancel_url' => route('pos.index', ['payment' => 'failed'])
+                ]
+            ]
+        ]);
+
+        dd($response->json());
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Paymongo API Error'], 500);
+        }
+
+        return response()->json([
+            'checkout_url' => $response->json()['data']['attributes']['checkout_url']
+        ]);
+    }
+
     public function deleteFromCart(Product $product, Request $request)
     {
         $cart = $request->session()->get('cart', []);
@@ -196,5 +210,40 @@ class PosController extends Controller
         }
 
         return back()->with('success', 'Item removed.');
+    }
+
+    private function proccessOrderInDatabase($cart, $paymentMethod, $amountReceived, $invoiceId)
+    {
+        return DB::transaction(function () use ($cart, $paymentMethod, $amountReceived, $invoiceId) {
+            $total = $cart->sum(fn($item) => $item['price'] * $item['quantity']);
+            $change = $amountReceived - $total;
+
+            $order = Order::create([
+                'invoice_id' => $invoiceId,
+                'user_id' => Auth::id(),
+                'total' => $total,
+                'payment_method' => $paymentMethod,
+                'subtotal' => $total,
+                'amount_received' => $amountReceived,
+                'change' => $change,
+            ]);
+
+            $items = $cart->map(fn($details, $id) => [
+                'order_id'   => $order->id,
+                'product_id' => $id,
+                'quantity'   => $details['quantity'],
+                'price'      => $details['price'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ])->values()->all();
+
+            OrderItem::insert($items);
+
+            foreach ($cart as $id => $details) {
+                Product::where('id', $id)->decrement('stock', $details['quantity']);
+            }
+
+            return $order;
+        });
     }
 }
