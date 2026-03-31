@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 use function Pest\Laravel\session;
@@ -183,13 +184,11 @@ class PosController extends Controller
                         'name' => $item['name'],
                         'quantity' => $item['quantity'],
                     ])->values()->all(),
-                    'success_url' => route('pos.index', ['payment' => 'success']),
-                    'cancel_url' => route('pos.index', ['payment' => 'failed'])
+                    'success_url' => route('pos.payment.success', ['payment' => 'success']),
+                    'cancel_url' => route('pos.payment.cancel', ['payment' => 'failed'])
                 ]
             ]
         ]);
-
-        dd($response->json());
 
         if ($response->failed()) {
             return response()->json(['error' => 'Paymongo API Error'], 500);
@@ -210,6 +209,38 @@ class PosController extends Controller
         }
 
         return back()->with('success', 'Item removed.');
+    }
+
+
+    public function paymentSuccess(Request $request)
+    {
+        $cart = collect($request->session()->get('cart'));
+
+        if ($cart->isEmpty()) {
+            return redirect()->route('pos.index')->with('error', 'Payment processed, but cart was lost');
+        }
+
+        $total = $cart->sum(fn($item) => $item['price'] * $item['quantity']);
+
+        $latestOrder = Order::latest()->first();
+        $nextId = $latestOrder ? $latestOrder->id + 1 : 1;
+        $invoiceId = 'ORD-' . now()->format('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+
+        try {
+            $this->proccessOrderInDatabase($cart, 'paymongo', $total, $invoiceId);
+
+            $request->session()->forget('cart');
+
+            return redirect()->route('pos.index')->with('success', 'Payment Successful! Order ' . $invoiceId . ' saved.');
+        } catch (Exception $e) {
+            Log::error('Payment Success Save Error: ' . $e->getMessage());
+            return redirect()->route('pos.index')->with('error', 'Payment confirmed, but failed to save to database.');
+        }
+    }
+
+    public function paymentCancel()
+    {
+        return redirect()->route('pos.index')->with('success', 'Payment was cancelled. Your cart is still saved.');
     }
 
     private function proccessOrderInDatabase($cart, $paymentMethod, $amountReceived, $invoiceId)

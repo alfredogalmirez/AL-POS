@@ -34,6 +34,8 @@ Route::middleware('auth', EnsureUserIsCashier::class)->group(function () {
     Route::post('/pos/quantity/set', [PosController::class, 'setQuantity'])->name('pos.setQuantity');
     Route::post('/pos/checkout/cash', [PosController::class, 'checkout'])->name('pos.checkout');
     Route::post('/pos/checkout/paymongo', [PosController::class, 'initiatePaymongo'])->name('pos.checkout.paymongo');
+    Route::get('/pos/payment/success', [PosController::class, 'paymentSuccess'])->name('pos.payment.success');
+    Route::get('/pos/payment/cancel', [PosController::class, 'paymentCancel'])->name('pos.payment.cancel');
     Route::delete('/pos/cart/{product}', [PosController::class, 'deleteFromCart'])->name('pos.remove');
 
     Route::get('/pos/transactions', [CashierTransactionController::class, 'history'])->name('pos.history');

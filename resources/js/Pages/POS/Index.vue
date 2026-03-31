@@ -359,13 +359,13 @@ const handleManualInput = (id, event) => {
                     </div>
 
                     <div class="flex justify-center items-center">
-                        <span v-if="form.amount_received >= total && Object.keys(cart).length > 0"
+                        <span v-if="form.amount_received > total && Object.keys(cart).length > 0"
                             class="text-lg font-black text-slate-800">Change: {{ formatCurrency(form.amount_received -
                                 total) }} </span>
                     </div>
 
                     <button @click="handleCheckout"
-                        :disabled="form.processing || total <= 0 && cart.length === 0 || (payment_method === 'cash' && form.amount_received < total)"
+                        :disabled="form.processing || total <= 0 && cart.length === 0 || form.payment_method === 'cash' && form.amount_received < total"
                         :class="[
                             'w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
                             { 'active:scale-95': !form.processing && total > 0 }
